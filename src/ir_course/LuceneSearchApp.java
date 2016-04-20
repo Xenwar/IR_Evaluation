@@ -70,43 +70,51 @@ public class LuceneSearchApp {
 
 	private double relevantDocumentCount = 0;
 	public static int TASK_NUMBER = 13;
-
+	public static Analyzer analyzer = null;
+	public static List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
+	public static CharArraySet uselesslist = new CharArraySet(uselessWords,
+			true);
+	public static CharArraySet stopSet = new CharArraySet(stopWords, true);
 	public LuceneSearchApp() {
 
 	}
 
-	/*--------------------------------------Indexing-------------------------*/
-	public void index(List<DocumentInCollection> docs, boolean stopOrNotStop,
-			boolean porterEnglish) throws IOException {
-
-		Directory indexdir = FSDirectory.open(Paths.get("./index"));
-		Analyzer analyzer = null;
+	public void configure_analyzer(boolean stopOrNotStop, String morphology) {
+		List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
+		CharArraySet uselesslist = new CharArraySet(uselessWords, true);
 		CharArraySet stopSet = new CharArraySet(stopWords, true);
-		// not porter/english stemmer , then choose between stop and standard
-		// ones
-		if (porterEnglish == false) {
+		switch (morphology) {
+		case "porter":
 			if (stopOrNotStop)
 				analyzer = new StopAnalyzer(stopSet);
 			else
 				analyzer = new StandardAnalyzer();
-		} else {// porter/english stemmer but check if you can you can use stop
-				// words.
+			break;
+		case "noporter":
 			if (stopOrNotStop) {
 				analyzer = new EnglishAnalyzer(stopSet);
-			} // end of chckeing stop workds.
-			else {// create non-usable stop word list.
-				List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
-				CharArraySet uselesslist = new CharArraySet(uselessWords, true);
+			} else {
 				analyzer = new EnglishAnalyzer(uselesslist);
 			}
+		default:
+			System.out.println("An explicit setting of an analyzer required.");
+			break;
 		}
+	}// end of configuring analyzer
 
+	/****************************************************************************
+	 *			Indexing
+	 ****************************************************************************/
+	public void index(List<DocumentInCollection> docs, boolean stopOrNotStop,
+			String porterEnglish) throws IOException {
+		configure_analyzer(stopOrNotStop, porterEnglish);
+		/* Indexing Configuration */
+		Directory indexdir = FSDirectory.open(Paths.get("./index"));
 		IndexWriterConfig config = new IndexWriterConfig(analyzer);
-		config.setOpenMode(OpenMode.CREATE); // update or overwrite existing
-												// indexes Or-else duplicate
-												// entries
+		// update or overwrite existing indexes Or-else duplicate entries
+		config.setOpenMode(OpenMode.CREATE);
 		IndexWriter writer = new IndexWriter(indexdir, config);
-
+		/* Start indexing */
 		for (DocumentInCollection iter : docs) {
 			Document doc = new Document();
 			if (iter.getSearchTaskNumber() == TASK_NUMBER) {
@@ -116,26 +124,19 @@ public class LuceneSearchApp {
 					relevantDocumentCount += 1;
 				}
 				doc.add(new TextField("title", iter.getTitle(), Field.Store.YES));
-				doc.add(new TextField("abstract", iter.getAbstractText(),
-						Field.Store.YES));
+				doc.add(new TextField("abstract", iter.getAbstractText(),Field.Store.YES));
 				doc.add(new TextField("relevance", relevance, Field.Store.YES));
 				writer.addDocument(doc);
 			}
 		}
 		writer.close();
 	}
-
-	/*--------------------------------------Searching-------------------------
-	 * String morphological[] = a combination of options.
-	 * the first element considers using stop words, if true
-	 * the second one decides on using Porter Stemmer
-	 * all subsequent elements refer to other stemmers. 
-	 * ------------------------------------------------------------------------*/
+	/****************************************************************************
+	 *			Searching.
+	 ****************************************************************************/
 	public List<Document> search(String query, int hitspage, String RankMethod,
-			boolean removeStops, boolean porter) throws IOException {
-		// List<String> results = new LinkedList<String>();
+			boolean removeStops, String port) throws IOException {
 		List<Document> d = new LinkedList<Document>();
-
 		String indexPath = "./index";
 
 		try {
@@ -154,7 +155,7 @@ public class LuceneSearchApp {
 			}
 
 			BooleanQuery.Builder bq = new BooleanQuery.Builder();
-			this.checkQuery(query, bq, removeStops, porter);
+			this.checkQuery(query, bq, removeStops, port);
 			TopDocs docs = searcher.search(bq.build(), hitspage);
 
 			ScoreDoc[] hits = docs.scoreDocs;
@@ -167,42 +168,18 @@ public class LuceneSearchApp {
 		} catch (Exception e) {
 			System.out.println("Got an Exception: " + e.getMessage());
 		}
-
 		return d;
 	}
-
+	/****************************************************************************
+	 *			Check query.
+	 ****************************************************************************/
 	public void checkQuery(String query, BooleanQuery.Builder bq,
-			boolean stopOrNotStop, boolean porterEnglish) {
-
-		Analyzer analyzer = null;
-		CharArraySet stopSet = new CharArraySet(stopWords, true);
-
-		// not porter/english stemmer , then choose between stop and standard
-		// ones
-		if (porterEnglish == false) {
-			if (stopOrNotStop)
-				analyzer = new StopAnalyzer(stopSet);
-			else
-				analyzer = new StandardAnalyzer();
-		} else {// porter/english stemmer but check if you can you can use stop
-				// words.
-			if (stopOrNotStop) {
-				analyzer = new EnglishAnalyzer(stopSet);
-			} // end of chckeing stop workds.
-			else {// create non-usable stop word list.
-				List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
-				CharArraySet uselesslist = new CharArraySet(uselessWords, true);
-				analyzer = new EnglishAnalyzer(uselesslist);
-			}
-		}
-
+		boolean stopOrNotStop, String porterEnglish) {
+		configure_analyzer(stopOrNotStop, porterEnglish);
 		QueryParser queryParser = new QueryParser("abstract", analyzer);
 		Query queryparts = null;
 		try {
-			queryparts = queryParser.parse(query);
-			// System.out.println(queryparts);
-			;
-
+			queryparts = queryParser.parse(query);			
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -210,15 +187,18 @@ public class LuceneSearchApp {
 		bq.add(queryparts, BooleanClause.Occur.MUST);
 	}
 
-	/*--------------------------------------print query-------------------------*/
+	/****************************************************************************
+	 *			print query.
+	 ****************************************************************************/
 
 	public void printQuery(String query) {
 		if (query != null) {
-			;// System.out.print("Search ("+query+"):\n");
+			System.out.print("Search query:("+query+"):\n");
 		}
 	}
-
-	/*--------------------------------------print result set-------------------------*/
+	/****************************************************************************
+	 *			printResults.
+	 ****************************************************************************/
 	public void printResults(List<Document> d_results) {
 		List<String> results = new LinkedList<String>();
 		if (d_results.size() > 0) {
@@ -232,7 +212,9 @@ public class LuceneSearchApp {
 			System.out.println("no results");
 	}
 
-	/*--------------------------------------calculate precision-------------------------*/
+	/****************************************************************************
+	 *			calculate precision and recall.
+	 ****************************************************************************/
 	public double[] calPrecisionRecall(List<Document> d_results, int limit) {
 		double tp = 0;// true positive
 		double fn = 0;// false negative
@@ -254,7 +236,9 @@ public class LuceneSearchApp {
 			PrecisionRecall[1] = tp / (tp + fn);
 		return PrecisionRecall;
 	}
-
+	/****************************************************************************
+	 *			calculate precision-recall- curve.
+	 ****************************************************************************/
 	// verbose: to decide if one should be shown with precision-recall curve
 	public void calPrecisionRecallCurve(List<Document> d_results,
 			boolean verbose) {
@@ -275,7 +259,7 @@ public class LuceneSearchApp {
 			}
 			recall = pr[1];
 			PrecisionsAtEachRecall.add(pr[0]);
-			// System.out.printf("%f\t%f\n", pr[0], pr[1]);
+			System.out.printf("%f\t%f\n", pr[0], pr[1]);
 		}
 		MaxPrecisionsAtEachRecall.add(new double[] {
 				Collections.max(PrecisionsAtEachRecall), recall });
@@ -290,41 +274,31 @@ public class LuceneSearchApp {
 			}
 		}
 	}
-
-	/*--------------------------------------Driver code-------------------------*/
+	/****************************************************************************
+	 *			Driver program
+	 ****************************************************************************/
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0) {
 			boolean removingStops[] = { false };
-			boolean porter[] = { false };
+			String porterstemmer[] = {  "porter" };//if needed KStemFilter
 			for (boolean stop : removingStops) {
-				for (boolean port : porter) {
-					// EnglishMinimalStemFilter, KStemFilter and
-					// PorterStemFilter
+				for (String porter : porterstemmer) {					
 					int number_of_queries = 3;// at least two or three
-					int max_result_size = 500;// at least two or three
+					int max_result_size = 500;
 					LuceneSearchApp engine = new LuceneSearchApp();
 					DocumentCollectionParser parser = new DocumentCollectionParser();
 					parser.parse(args[0]);
 					List<DocumentInCollection> docs = parser.getDocuments();
-					engine.index(docs, stop, port);
+					engine.index(docs, stop, porter);
 					// at least 2-3 queries,randomly chosen
-					Set<String> all_queries = new HashSet<String>();// saving
-																	// all
-																	// queries.
-					for (DocumentInCollection iter : docs) {						
+					Set<String> all_queries = new HashSet<String>();
+					for (DocumentInCollection iter : docs) {
 						String query = iter.getQuery();
 						if (iter.getSearchTaskNumber() == TASK_NUMBER)
 							all_queries.add(query);
 					} // end of collecting queries.
 
-					/*
-					 * WE CANNOT HARD CODE THE QUERIES, as the test data could
-					 * be different. List<String> all_queries = Arrays.asList(
-					 * // "data visualize display dataset datasets",
-					 * "complex data set display",
-					 * "large data set visualization", "visualizing dataset");
-					 */
-					String[] RankMethod = { "VSM","BM25" }; // "BM25" or "VSM"
+					String[] RankMethod = { "VSM", "BM25" }; // "BM25" or "VSM"
 					for (String method : RankMethod) {
 						System.out.println("Using " + method);
 						Iterator<String> querys = all_queries.iterator();
@@ -332,7 +306,7 @@ public class LuceneSearchApp {
 							String query = querys.next();
 							engine.printQuery(query);
 							List<Document> d_results = engine.search(query,
-									max_result_size, method, stop, port);
+									max_result_size, method, stop, porter);
 							engine.printResults(d_results);
 
 							engine.calPrecisionRecallCurve(d_results, true);
@@ -341,7 +315,8 @@ public class LuceneSearchApp {
 								.println("==========================================");
 						number_of_queries--;
 						if (number_of_queries <= 0)
-							break;// comment out if all available queries are to be made
+							break;// comment out if all available queries are to
+									// be made
 					}
 				} // end of stop word variation
 			} // end of morphologicall variation
