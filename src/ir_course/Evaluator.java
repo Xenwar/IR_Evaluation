@@ -292,5 +292,10 @@ public void ShowCalculate_11_point_Interpolated_Precision_Recall_Curve(){
 public void print_hist(int query){
 	System.out.println("\t\thit counts:  "+query +" : " + this.hits.length);
 
-}
+}//end of printing hits
+public void print_precision_recall(){
+		System.out.println("Pr: " + this.onePrecisionRecall[0] + "\tRec:" + this.onePrecisionRecall[1]);
+	
+}//end of printing precision and recall. 
+
 }
