@@ -1,3 +1,4 @@
+
 /*
  * Skeleton class for the Lucene search program implementation
  *
@@ -11,110 +12,124 @@
 package ir_course;
 
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.io.StringReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-
+import java.util.HashMap;
+import java.util.Map;
+import java.nio.file.Paths;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.StopAnalyzer;
-import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
+import org.apache.lucene.analysis.en.PorterStemFilter;
+import org.apache.lucene.analysis.pt.PortugueseAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.TokenStream;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
-import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryparser.classic.ParseException;
 import org.apache.lucene.queryparser.classic.QueryParser;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
+import org.tartarus.snowball.ext.KpStemmer;
+import org.tartarus.snowball.ext.PorterStemmer;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.BM25Similarity;
+import org.apache.lucene.search.similarities.ClassicSimilarity;
 
 public class LuceneSearchApp {
 
-	public static List<String> stopWords = Arrays.asList("0", "1", "2", "3",
-			"4", "5", "6", "7", "8", "9", "000", "$", "about", "after", "all",
-			"also", "an", "and", "another", "any", "are", "as", "at", "be",
-			"because", "been", "before", "being", "between", "both", "but",
-			"by", "came", "can", "come", "could", "did", "do", "does", "each",
-			"else", "for", "from", "get", "got", "has", "had", "he", "have",
-			"her", "here", "him", "himself", "his", "how", "if", "in", "into",
-			"is", "it", "its", "just", "like", "make", "many", "me", "might",
-			"more", "most", "much", "must", "my", "never", "now", "of", "on",
-			"only", "or", "other", "our", "out", "over", "re", "said", "same",
-			"see", "should", "since", "so", "some", "still", "such", "take",
-			"than", "that", "the", "their", "them", "then", "there", "these",
-			"they", "this", "those", "through", "to", "too", "under", "up",
-			"use", "very", "want", "was", "way", "we", "well", "were", "what",
-			"when", "where", "which", "while", "who", "will", "with", "would",
-			"you", "your", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
-			"k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", "w",
-			"x", "y", "z");
+	private static final CharArraySet CharArraySet = null;
+	public static List<String> stopWords = Arrays.asList("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "000", "$",
+			"about", "after", "all", "also", "an", "and", "another", "any", "are", "as", "at", "be", "because", "been",
+			"before", "being", "between", "both", "but", "by", "came", "can", "come", "could", "did", "do", "does",
+			"each", "else", "for", "from", "get", "got", "has", "had", "he", "have", "her", "here", "him", "himself",
+			"his", "how", "if", "in", "into", "is", "it", "its", "just", "like", "make", "many", "me", "might", "more",
+			"most", "much", "must", "my", "never", "now", "of", "on", "only", "or", "other", "our", "out", "over", "re",
+			"said", "same", "see", "should", "since", "so", "some", "still", "such", "take", "than", "that", "the",
+			"their", "them", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "up",
+			"use", "very", "want", "was", "way", "we", "well", "were", "what", "when", "where", "which", "while", "who",
+			"will", "with", "would", "you", "your", "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+			"n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z");
+
+	private boolean is_stopword(String s) {
+		for (String word : stopWords) {
+			if (word.equals(s))
+				return true;
+		}
+		return false;
+	}
 
 	private double relevantDocumentCount = 0;
 	public static int TASK_NUMBER = 13;
-	public static Analyzer analyzer = null;
-	public static List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
-	public static CharArraySet uselesslist = new CharArraySet(uselessWords,
-			true);
-	public static CharArraySet stopSet = new CharArraySet(stopWords, true);
+
 	public LuceneSearchApp() {
 
 	}
 
-	public void configure_analyzer(boolean stopOrNotStop, String morphology) {
-		List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
-		CharArraySet uselesslist = new CharArraySet(uselessWords, true);
+	/*--------------------------------------Indexing-------------------------*/
+	public void index(List<DocumentInCollection> docs, boolean stopOrNotStop, boolean porterEnglish)
+			throws IOException {
+
+		Directory indexdir = FSDirectory.open(Paths.get("./index"));
+		Analyzer analyzer = null;
 		CharArraySet stopSet = new CharArraySet(stopWords, true);
-		switch (morphology) {
-		case "porter":
+		// not porter/english stemmer , then choose between stop and standard
+		// ones
+		if (porterEnglish == false) {
 			if (stopOrNotStop)
 				analyzer = new StopAnalyzer(stopSet);
 			else
 				analyzer = new StandardAnalyzer();
-			break;
-		case "noporter":
+		} else {// porter/english stemmer but check if you can you can use stop
+				// words.
 			if (stopOrNotStop) {
 				analyzer = new EnglishAnalyzer(stopSet);
-			} else {
+			} // end of chckeing stop workds.
+			else {// create non-usable stop word list.
+				List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
+				CharArraySet uselesslist = new CharArraySet(uselessWords, true);
 				analyzer = new EnglishAnalyzer(uselesslist);
 			}
-		default:
-			System.out.println("An explicit setting of an analyzer required.");
-			break;
 		}
-	}// end of configuring analyzer
 
-	/****************************************************************************
-	 *			Indexing
-	 ****************************************************************************/
-	public void index(List<DocumentInCollection> docs, boolean stopOrNotStop,
-			String porterEnglish) throws IOException {
-		configure_analyzer(stopOrNotStop, porterEnglish);
-		/* Indexing Configuration */
-		Directory indexdir = FSDirectory.open(Paths.get("./index"));
 		IndexWriterConfig config = new IndexWriterConfig(analyzer);
-		// update or overwrite existing indexes Or-else duplicate entries
-		config.setOpenMode(OpenMode.CREATE);
+		config.setOpenMode(OpenMode.CREATE); // update or overwrite existing
+												// indexes Or-else duplicate
+												// entries
 		IndexWriter writer = new IndexWriter(indexdir, config);
-		/* Start indexing */
+
 		for (DocumentInCollection iter : docs) {
 			Document doc = new Document();
 			if (iter.getSearchTaskNumber() == TASK_NUMBER) {
@@ -124,24 +139,29 @@ public class LuceneSearchApp {
 					relevantDocumentCount += 1;
 				}
 				doc.add(new TextField("title", iter.getTitle(), Field.Store.YES));
-				doc.add(new TextField("abstract", iter.getAbstractText(),Field.Store.YES));
+				doc.add(new TextField("abstract", iter.getAbstractText(), Field.Store.YES));
 				doc.add(new TextField("relevance", relevance, Field.Store.YES));
 				writer.addDocument(doc);
 			}
 		}
 		writer.close();
 	}
-	/****************************************************************************
-	 *			Searching.
-	 ****************************************************************************/
-	public List<Document> search(String query, int hitspage, String RankMethod,
-			boolean removeStops, String port) throws IOException {
+
+	/*--------------------------------------Searching-------------------------
+	 * String morphological[] = a combination of options.
+	 * the first element considers using stop words, if true
+	 * the second one decides on using Porter Stemmer
+	 * all subsequent elements refer to other stemmers. 
+	 * ------------------------------------------------------------------------*/
+	public List<Document> search(String query, int hitspage, String RankMethod, boolean removeStops, boolean porter)
+			throws IOException {
+		// List<String> results = new LinkedList<String>();
 		List<Document> d = new LinkedList<Document>();
+
 		String indexPath = "./index";
 
 		try {
-			IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths
-					.get(indexPath)));
+			IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths.get(indexPath)));
 			IndexSearcher searcher = new IndexSearcher(reader);
 			switch (RankMethod) {
 			case "BM25":
@@ -153,52 +173,73 @@ public class LuceneSearchApp {
 			default:
 				break;
 			}
-
+			
 			BooleanQuery.Builder bq = new BooleanQuery.Builder();
-			this.checkQuery(query, bq, removeStops, port);
+			this.checkQuery(query, bq, removeStops, porter);
 			TopDocs docs = searcher.search(bq.build(), hitspage);
 
 			ScoreDoc[] hits = docs.scoreDocs;
 			System.out.println("number of hits: " + hits.length);
-
+			
 			for (int i = 0; i < hits.length; ++i) {
 				int docId = hits[i].doc;
 				d.add(i, searcher.doc(docId));
 			}
+			reader.close();
 		} catch (Exception e) {
 			System.out.println("Got an Exception: " + e.getMessage());
 		}
+
 		return d;
 	}
-	/****************************************************************************
-	 *			Check query.
-	 ****************************************************************************/
-	public void checkQuery(String query, BooleanQuery.Builder bq,
-		boolean stopOrNotStop, String porterEnglish) {
-		configure_analyzer(stopOrNotStop, porterEnglish);
+
+	public void checkQuery(String query, BooleanQuery.Builder bq, boolean stopOrNotStop, boolean porterEnglish) {
+
+		Analyzer analyzer = null;
+		CharArraySet stopSet = new CharArraySet(stopWords, true);
+
+		// not porter/english stemmer , then choose between stop and standard
+		// ones
+		if (porterEnglish == false) {
+			if (stopOrNotStop)
+				analyzer = new StopAnalyzer(stopSet);
+			else
+				analyzer = new StandardAnalyzer();
+		} else {// porter/english stemmer but check if you can you can use stop
+				// words.
+			if (stopOrNotStop) {
+				analyzer = new EnglishAnalyzer(stopSet);
+			} // end of chckeing stop workds.
+			else {// create non-usable stop word list.
+				List<String> uselessWords = Arrays.asList("asdfgh", "adfa");
+				CharArraySet uselesslist = new CharArraySet(uselessWords, true);
+				analyzer = new EnglishAnalyzer(uselesslist);
+			}
+		}
+
 		QueryParser queryParser = new QueryParser("abstract", analyzer);
 		Query queryparts = null;
 		try {
-			queryparts = queryParser.parse(query);			
+			queryparts = queryParser.parse(query);
+			// System.out.println(queryparts);
+			;
+
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		bq.add(queryparts, BooleanClause.Occur.MUST);
+		analyzer.close();
 	}
-
-	/****************************************************************************
-	 *			print query.
-	 ****************************************************************************/
+	/*--------------------------------------print query-------------------------*/
 
 	public void printQuery(String query) {
 		if (query != null) {
-			System.out.print("Search query:("+query+"):\n");
+			;// System.out.print("Search ("+query+"):\n");
 		}
 	}
-	/****************************************************************************
-	 *			printResults.
-	 ****************************************************************************/
+
+	/*--------------------------------------print result set-------------------------*/
 	public void printResults(List<Document> d_results) {
 		List<String> results = new LinkedList<String>();
 		if (d_results.size() > 0) {
@@ -207,14 +248,12 @@ public class LuceneSearchApp {
 			}
 			Collections.sort(results);
 			for (int i = 0; i < results.size(); i++)
-				System.out.println(" " + (i + 1) + ". " + results.get(i));
+				System.out.println(" " + (i+1) + ". " + results.get(i));
 		} else
 			System.out.println("no results");
 	}
 
-	/****************************************************************************
-	 *			calculate precision and recall.
-	 ****************************************************************************/
+	/*--------------------------------------calculate precision-------------------------*/
 	public double[] calPrecisionRecall(List<Document> d_results, int limit) {
 		double tp = 0;// true positive
 		double fn = 0;// false negative
@@ -227,7 +266,7 @@ public class LuceneSearchApp {
 		}
 		fn = relevantDocumentCount - tp;
 		fp = limit - tp;
-
+		
 		// calculate precision
 		if ((tp + fp) != 0)
 			PrecisionRecall[0] = tp / (tp + fp);
@@ -236,93 +275,133 @@ public class LuceneSearchApp {
 			PrecisionRecall[1] = tp / (tp + fn);
 		return PrecisionRecall;
 	}
-	/****************************************************************************
-	 *			calculate precision-recall- curve.
-	 ****************************************************************************/
-	// verbose: to decide if one should be shown with precision-recall curve
-	public void calPrecisionRecallCurve(List<Document> d_results,
-			boolean verbose) {
-		int stepSize = 1;
-		List<double[]> MaxPrecisionsAtEachRecall = new ArrayList<double[]>();
-		List<double[]> PrecisionRecall = new ArrayList<double[]>();
-		for (int i = 1; i < d_results.size(); i += stepSize) {
+	/*****************************************************************************
+	 * calculate 11-point Interpolated Precision Recall Curve
+	 ****************************************************************************/	
+	public void cal11ptPrecisionRecallCurve(List<Document> d_results, boolean verbose) {
+		// 11-pt recall level
+		List<double[]> Pt11PrecionRecallCurve = new ArrayList<double []>();
+		List<double[]> PrecisionRecall = new ArrayList<double []>();
+		double[] desired_recall_levels = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+		for (int i = 1; i < d_results.size(); i++) {
 			PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
 		}
-		// Find out at each recall level the maximal precision
-		double recall = 1.0;
-		List<Double> PrecisionsAtEachRecall = new ArrayList<Double>();
-		for (double[] pr : PrecisionRecall) {
-			if (pr[1] > recall) {
-				MaxPrecisionsAtEachRecall.add(new double[] {
-						Collections.max(PrecisionsAtEachRecall), recall });
-				PrecisionsAtEachRecall.clear();
-			}
-			recall = pr[1];
-			PrecisionsAtEachRecall.add(pr[0]);
-			System.out.printf("%f\t%f\n", pr[0], pr[1]);
-		}
-		MaxPrecisionsAtEachRecall.add(new double[] {
-				Collections.max(PrecisionsAtEachRecall), recall });
-		if (verbose) {
-			System.out.println("=======precision-recall curve========\n");
+		for (double recall_level : desired_recall_levels) {
+			double max_precision = 0.0;
+			// computing interpolated precision at a certain recall_level defined as 
+			// the highest precision found for any recall level >= recall_level
+			// please refer to http://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html
+			// for details
 			for (double[] pr : PrecisionRecall) {
-				System.out.printf("%f\t%f\n", pr[0], pr[1]);
+				double precision = pr[0];
+				double recall = pr[1];
+				if (recall >= recall_level) {
+					if (precision > max_precision)
+						max_precision = precision;
+				}
 			}
-			System.out.println("=======Max-precision-recall curve========\n");
-			for (double[] pr : MaxPrecisionsAtEachRecall) {
+			Pt11PrecionRecallCurve.add(new double[] {recall_level, max_precision});
+		}
+		if (verbose) {
+			System.out.println("=======11-point precision-recall curve========\n");
+			for (double[] pr : Pt11PrecionRecallCurve) {
 				System.out.printf("%f\t%f\n", pr[0], pr[1]);
-			}
+			}	
 		}
 	}
-	/****************************************************************************
-	 *			Driver program
-	 ****************************************************************************/
+	/*****************************************************************************
+	 * calculate all-point Interpolated Precision Recall Curve
+	 ****************************************************************************/	
+	public void calInterpolatedPrecisionRecallCurve(List<Document> d_results, boolean verbose) {
+		// 11-pt recall level
+		List<double[]> InterpPrecionRecallCurve = new ArrayList<double []>();
+		List<double[]> PrecisionRecall = new ArrayList<double []>();
+		for (int i = 1; i < d_results.size(); i++) {
+			PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
+		}
+		for (int i = 0; i < PrecisionRecall.size(); i++) {
+			double recall_level = PrecisionRecall.get(i)[1];
+			double max_precision = PrecisionRecall.get(i)[0];
+			// computing interpolated precision at a certain recall_level defined as 
+			// the highest precision found for any recall level >= recall_level
+			// please refer to http://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html
+			// for details
+			for (int j = i + 1; j < PrecisionRecall.size(); j++) {
+				double precision = PrecisionRecall.get(j)[0];
+				double recall = PrecisionRecall.get(j)[1];
+				if (recall >= recall_level) {
+					if (precision > max_precision)
+						max_precision = precision;
+				}
+			}
+			InterpPrecionRecallCurve.add(new double[] {recall_level, max_precision});
+		}
+		if (verbose) {
+			System.out.println("=======11-point precision-recall curve========\n");
+			for (double[] pr : InterpPrecionRecallCurve) {
+				System.out.printf("%f\t%f\n", pr[0], pr[1]);
+			}	
+		}
+	}
+
+	/*--------------------------------------Driver code-------------------------*/
 	public static void main(String[] args) throws IOException {
 		if (args.length > 0) {
 			boolean removingStops[] = { false };
-			String porterstemmer[] = {  "porter" };//if needed KStemFilter
+			boolean porter[] = { false };
 			for (boolean stop : removingStops) {
-				for (String porter : porterstemmer) {					
-					int number_of_queries = 3;// at least two or three
-					int max_result_size = 500;
+				for (boolean port : porter) {
+					// EnglishMinimalStemFilter, KStemFilter and
+					// PorterStemFilter
+					//int number_of_queries = 2;// at least two or three
+					int max_result_size = 500;// at least two or three
 					LuceneSearchApp engine = new LuceneSearchApp();
 					DocumentCollectionParser parser = new DocumentCollectionParser();
 					parser.parse(args[0]);
 					List<DocumentInCollection> docs = parser.getDocuments();
-					engine.index(docs, stop, porter);
+					engine.index(docs, stop, port);
 					// at least 2-3 queries,randomly chosen
-					Set<String> all_queries = new HashSet<String>();
+					/*
+					Set<String> all_queries = new HashSet<String>();// saving
+																		// all
+																		// queries.
+					
 					for (DocumentInCollection iter : docs) {
+						Document doc = new Document();// for collecting queries
 						String query = iter.getQuery();
 						if (iter.getSearchTaskNumber() == TASK_NUMBER)
 							all_queries.add(query);
 					} // end of collecting queries.
+					*/
+					List<String> all_queries = Arrays.asList( 
+							"data visualize display dataset", 
+							"complex data set display", 
+							"large data set visualization", 
+							"visualizing dataset");
 
-					String[] RankMethod = { "VSM", "BM25" }; // "BM25" or "VSM"
+					String[] RankMethod = { "BM25" };	// "BM25" or "VSM"
 					for (String method : RankMethod) {
 						System.out.println("Using " + method);
 						Iterator<String> querys = all_queries.iterator();
 						while (querys.hasNext()) {
 							String query = querys.next();
 							engine.printQuery(query);
-							List<Document> d_results = engine.search(query,
-									max_result_size, method, stop, porter);
-							engine.printResults(d_results);
-
-							engine.calPrecisionRecallCurve(d_results, true);
+							List<Document> d_results = engine.search(query, max_result_size, 
+																		method, stop, port);
+							//engine.printResults(d_results);
+							//engine.cal11ptPrecisionRecallCurve(d_results, true);
+							engine.calInterpolatedPrecisionRecallCurve(d_results, true);
 						}
-						System.out
-								.println("==========================================");
-						number_of_queries--;
-						if (number_of_queries <= 0)
-							break;// comment out if all available queries are to
+						System.out.println("==========================================");
+						//number_of_queries--;
+						//if (number_of_queries <= 0)
+							//break;// comment out if all available queries are to
 									// be made
 					}
 				} // end of stop word variation
 			} // end of morphologicall variation
 		} // end of arv.length > 0
 		else
-			System.out
-					.println("ERROR: the path of a Corpus  file has to be passed as a command line argument.");
+			System.out.println("ERROR: the path of a Corpus  file has to be passed as a command line argument.");
 	}
 }
