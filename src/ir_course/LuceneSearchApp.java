@@ -109,20 +109,18 @@ import java.util.List;
 					engine.index(docs);
 					engine.setAll_queries(docs);
 					{
-						System.out.println("Method: \n" + method + "Analyzer: " + engine.confianlyz.toString());
+						System.out.println("\nMethod: \t" + method + engine.confianlyz.toString());
 						Iterator<String> querys = engine.getAll_queries().iterator();
 						while (querys.hasNext()) {
 							qCounter++;
 							String query = querys.next();
-							report.printQuery(query,qCounter);
-							engine.search(query,app.getMax_result_size(), method);
-							engine.print_hist(qCounter);
+							//report.printQuery(query,qCounter);
+							//engine.search(query,app.getMax_result_size(), method);
+							//engine.print_hist(qCounter);
 							//report.printResults(engine.getResultSet());
-							engine.calPrecisionRecallCurve(engine.getResultSet());
-							engine.showMaxprecisionRecallCurve();
-							engine.showPrecisionRecallCurve();
-	
-						}
+							//engine.showAll_point_Interpolated_Precision_Recall();
+							//engine.ShowCalculate_11_point_Interpolated_Precision_Recall_Curve();	
+						}//end of while
 						System.out
 								.println("=========================================");
 

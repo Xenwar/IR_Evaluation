@@ -38,9 +38,11 @@ public class Evaluator {
 	private int selectAnalyzer;
 	private Set<String> all_queries;
 	public double[] onePrecisionRecall = new double[2];
-	private List<double[]> MaxPrecisionsAtEachRecall = new ArrayList<double[]>();
-	private List<Double> PrecisionsAtEachRecall = new ArrayList<Double>();
-	private List<double[]> PrecisionRecall = new ArrayList<double[]>();
+	//private List<double[]> MaxPrecisionsAtEachRecall = new ArrayList<double[]>();
+	//private List<Double> PrecisionsAtEachRecall = new ArrayList<Double>();
+	//private List<double[]> PrecisionRecall = new ArrayList<double[]>();
+	private List<double[]> InterpPrecionRecallCurve = new ArrayList<double []>();
+	private List<double[]> Pt11PrecionRecallCurve = new ArrayList<double []>();
 	private List<Document> resultSet = new LinkedList<Document>();
 	public List<Document> getResultSet() {
 		return resultSet;
@@ -220,44 +222,72 @@ public double[] calPrecisionRecall(List<Document> d_results, int limit) {
 		this.onePrecisionRecall[1] = tp / (tp + fn);
 	return this.onePrecisionRecall;
 }
-/****************************************************************************
- *			calculate precision-recall- curve.
- ****************************************************************************/
-// verbose: to decide if one should be shown with precision-recall curve
-public void calPrecisionRecallCurve(List<Document> d_results) {
-	int stepSize = 1;
-
-	for (int i = 1; i < d_results.size(); i += stepSize) {
-		this.PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
+/*****************************************************************************
+ * calculate 11-point Interpolated Precision Recall Curve
+ ****************************************************************************/	
+public void cal11ptPrecisionRecallCurve(List<Document> d_results) {
+	// 11-pt recall level
+	List<double[]> PrecisionRecall = new ArrayList<double []>();
+	double[] desired_recall_levels = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
+	for (int i = 1; i < d_results.size(); i++) {
+		PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
 	}
-	// Find out at each recall level the maximal precision
-	double recall = 1.0;
-	for (double[] pr : this.PrecisionRecall) {
-		if (pr[1] > recall) {
-			MaxPrecisionsAtEachRecall.add(new double[] {
-					Collections.max(this.PrecisionsAtEachRecall), recall });
-			this.PrecisionsAtEachRecall.clear();
+	for (double recall_level : desired_recall_levels) {
+		double max_precision = 0.0;
+		// computing interpolated precision at a certain recall_level defined as 
+		// the highest precision found for any recall level >= recall_level
+		// please refer to http://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html
+		// for details
+		for (double[] pr : PrecisionRecall) {
+			double precision = pr[0];
+			double recall = pr[1];
+			if (recall >= recall_level) {
+				if (precision > max_precision)
+					max_precision = precision;
+			}
 		}
-		recall = pr[1];
-		this.PrecisionsAtEachRecall.add(pr[0]);
-		//System.out.printf("%f\t%f\n", pr[0], pr[1]);
+		this.Pt11PrecionRecallCurve.add(new double[] {recall_level, max_precision});
 	}
-	this.MaxPrecisionsAtEachRecall.add(new double[] {
-			Collections.max(this.PrecisionsAtEachRecall), recall });
+}
+/*****************************************************************************
+ * calculate all-point Interpolated Precision Recall Curve == NEWLY ADDED
+ ****************************************************************************/	
+public void calInterpolatedPrecisionRecallCurve(List<Document> d_results) {
+	// 11-pt recall level
+	List<double[]> PrecisionRecall = new ArrayList<double []>();
+	for (int i = 1; i < d_results.size(); i++) {
+		PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
+	}
+	for (int i = 0; i < PrecisionRecall.size(); i++) {
+		double recall_level = PrecisionRecall.get(i)[1];
+		double max_precision = PrecisionRecall.get(i)[0];
+		// computing interpolated precision at a certain recall_level defined as 
+		// the highest precision found for any recall level >= recall_level
+		// please refer to http://nlp.stanford.edu/IR-book/html/htmledition/evaluation-of-ranked-retrieval-results-1.html
+		// for details
+		for (int j = i + 1; j < PrecisionRecall.size(); j++) {
+			double precision = PrecisionRecall.get(j)[0];
+			double recall = PrecisionRecall.get(j)[1];
+			if (recall >= recall_level) {
+				if (precision > max_precision)
+					max_precision = precision;
+			}
+		}
+		this.InterpPrecionRecallCurve.add(new double[] {recall_level, max_precision});
+	}
+}//calculate all-point Interpolated Precision Recall Curve == NEWLY ADDED
+public void showAll_point_Interpolated_Precision_Recall(){
 
-}//end of calPrecisionRecallCurve
-
-public void showMaxprecisionRecallCurve(){
-	System.out.println("=======Max-precision-recall curve========\n");
-	for (double[] pr : this.MaxPrecisionsAtEachRecall) {
+	System.out.println("=======11-point precision-recall curve========\n");
+	for (double[] pr : InterpPrecionRecallCurve) {
 		System.out.printf("%f\t%f\n", pr[0], pr[1]);
-	}
-}//end of printing Max-precision-recall curve
-public void showPrecisionRecallCurve(){
-	System.out.println("=======precision-recall curve========\n");
-	for (double[] pr : this.PrecisionRecall) {
+	}	
+}//all-point Interpolated Precision Recall
+public void ShowCalculate_11_point_Interpolated_Precision_Recall_Curve(){
+	System.out.println("=======11-point precision-recall curve========\n");
+	for (double[] pr : this.Pt11PrecionRecallCurve) {
 		System.out.printf("%f\t%f\n", pr[0], pr[1]);
-	}
+	}	
 }//end of printing precision-recall curve
 public void print_hist(int query){
 	System.out.println("number of hits for Q = "+query +" : " + this.hits.length);
