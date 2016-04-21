@@ -12,7 +12,7 @@ public class Reporter {
 	 ****************************************************************************/
 	public void printQuery(String query,int qNum) {
 		if (query != null) {
-			System.out.print("Search query " + qNum +" +:("+query+"):\n");
+			System.out.print("Search query " + qNum +" :("+query+"):\n");
 		}
 	}
 	/****************************************************************************

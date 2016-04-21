@@ -290,7 +290,7 @@ public void ShowCalculate_11_point_Interpolated_Precision_Recall_Curve(){
 	}	
 }//end of printing precision-recall curve
 public void print_hist(int query){
-	System.out.println("number of hits for Q = "+query +" : " + this.hits.length);
+	System.out.println("\t\thit counts:  "+query +" : " + this.hits.length);
 
 }
 }
