@@ -17,16 +17,25 @@ import java.util.List;
 
 	public class LuceneSearchApp {
 		private int TASK_NUMBER = 13;
+		private String folder_identifier;
 		String[] RankMethod = { "VSM", "BM25" };
 		private String filePath;
 		int max_result_size = 500;
 		boolean removingStops[] = { true,false };
 		int chooseAnalyzer[] = {0,1};//if needed KStemFilter
-		
 		public LuceneSearchApp(String filepath) {
 			this.filePath = filepath;
 			
 		}//ending constructor. 
+		
+		public String getFolder_identifier() {
+			return folder_identifier;
+		}
+
+		public void setFolder_identifier(String folder_identifier) {
+			this.folder_identifier = folder_identifier;
+		}
+
 
 	public int getTASK_NUMBER() {
 			return TASK_NUMBER;
@@ -95,28 +104,31 @@ import java.util.List;
 		if (args.length > -1) {
 			LuceneSearchApp app = new LuceneSearchApp("input/corpus_part2.xml");
 			Reporter report = new Reporter();
-			
+			String indexStorageFolder;
 			for (String method : app.getRankMethod())
 			for (boolean stop : app.getRemovingStops()) {
 				for (int stdVsEng : app.getChooseAnalyzer()) {					
-					 int qCounter = 0;
+					String aboutStop = (stop==true) ? "_WRemoved_": "_WsNot_removed_";
+					String aboutStemmer = (stdVsEng==0) ? "_standard": "_English";
 
 					Evaluator engine = new Evaluator(stdVsEng,stop,app.getTASK_NUMBER());
+					indexStorageFolder = "./index/"+method+aboutStop+aboutStemmer;
+					app.setFolder_identifier(indexStorageFolder);
+					
 					DocumentCollectionParser parser = new DocumentCollectionParser();
 					parser.parse(app.getFilePath());
 					
 					List<DocumentInCollection> docs = parser.getDocuments();
-					engine.index(docs);
+					engine.index(docs,app.getFolder_identifier());
 					engine.setAll_queries(docs);
-					{
+					
 						System.out.println("=========================================");
 						System.out.println("\nMethod: \t" + method + engine.confianlyz.toString());
 						Iterator<String> querys = engine.getAll_queries().iterator();
 						while (querys.hasNext()) {
-							qCounter++;
 							String query = querys.next();
 							//calculations.
-							engine.search(query,app.getMax_result_size(), method);
+							engine.search(query,app.getMax_result_size(), method,app.getFolder_identifier());
 							engine.cal11ptPrecisionRecallCurve(engine.getResultSet());
 							engine.calInterpolatedPrecisionRecallCurve();
 							//reports.
@@ -130,8 +142,9 @@ import java.util.List;
 						}//end of while
 						System.out.println("=========================================");
 
-					}
+					
 				} // end of stop word variation
+				indexStorageFolder ="";
 			} // end of morphologicall variation
 		} // end of arv.length > 0
 		else

@@ -37,9 +37,7 @@ public class Evaluator {
 	private boolean r_stopw;
 	private int selectAnalyzer;
 	private Set<String> all_queries;
-	//private List<double[]> MaxPrecisionsAtEachRecall = new ArrayList<double[]>();
-	//private List<Double> PrecisionsAtEachRecall = new ArrayList<Double>();
-	//private List<double[]> PrecisionRecall = new ArrayList<double[]>();
+
 	private List<double[]> InterpPrecionRecallCurve = new ArrayList<double []>();
 	private List<double[]> Pt11PrecionRecallCurve = new ArrayList<double []>();
 	private List<Document> resultSet = new LinkedList<Document>();
@@ -118,16 +116,13 @@ public void setselectAnalyzer(int chooseAnalyzer) {
 public void setAnalyzer(Analyzer analyzer) {
 	this.analyzer = analyzer;
 }
-
-
-
-
 /****************************************************************************
  *			Indexing
+ * @param indexStorageFolder 
  ****************************************************************************/
-public void index(List<DocumentInCollection> docs) throws IOException {
+public void index(List<DocumentInCollection> docs, String indexStorageFolder) throws IOException {
 	/* Indexing Configuration */
-	Directory indexdir = FSDirectory.open(Paths.get("./index"));
+	Directory indexdir = FSDirectory.open(Paths.get(indexStorageFolder));
 	IndexWriterConfig config = new IndexWriterConfig(this.getAnalyzer());
 	// update or overwrite existing indexes Or-else duplicate entries
 	config.setOpenMode(OpenMode.CREATE);
@@ -151,9 +146,10 @@ public void index(List<DocumentInCollection> docs) throws IOException {
 }
 /****************************************************************************
  *			Searching.
+ * @param indexStorageFolder 
  ****************************************************************************/
-public List<Document> search(String query, int hitspage, String RankMethod) throws IOException {
-	String indexPath = "./index";
+public List<Document> search(String query, int hitspage, String RankMethod, String indexStorageFolder) throws IOException {
+	String indexPath = indexStorageFolder;
 
 	try {
 		IndexReader reader = DirectoryReader.open(FSDirectory.open(Paths
