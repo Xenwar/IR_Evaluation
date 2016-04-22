@@ -118,11 +118,12 @@ import java.util.List;
 							//calculations.
 							engine.search(query,app.getMax_result_size(), method);
 							engine.cal11ptPrecisionRecallCurve(engine.getResultSet());
-							engine.calInterpolatedPrecisionRecallCurve(engine.getResultSet());
+							engine.calInterpolatedPrecisionRecallCurve();
 							//reports.
 							//report.printQuery(query,qCounter);
 							//engine.print_hist(qCounter);
-							engine.print_precision_recall();
+							engine.print_precision_recall(100);
+							engine.clearResultSet();
 							//report.printResults(engine.getResultSet());
 							//engine.showAll_point_Interpolated_Precision_Recall();
 							//engine.ShowCalculate_11_point_Interpolated_Precision_Recall_Curve();	

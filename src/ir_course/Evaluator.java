@@ -37,7 +37,6 @@ public class Evaluator {
 	private boolean r_stopw;
 	private int selectAnalyzer;
 	private Set<String> all_queries;
-	public double[] onePrecisionRecall = new double[2];
 	//private List<double[]> MaxPrecisionsAtEachRecall = new ArrayList<double[]>();
 	//private List<Double> PrecisionsAtEachRecall = new ArrayList<Double>();
 	//private List<double[]> PrecisionRecall = new ArrayList<double[]>();
@@ -47,7 +46,9 @@ public class Evaluator {
 	public List<Document> getResultSet() {
 		return resultSet;
 	}
-
+	public void clearResultSet() {
+		resultSet.clear();
+	}
 	private ScoreDoc[] hits;
 	ConfigureAnalyzer confianlyz;
 
@@ -202,25 +203,26 @@ public void checkQuery(String query, BooleanQuery.Builder bq) {
 /****************************************************************************
  *			calculate precision and recall.
  ****************************************************************************/
-public double[] calPrecisionRecall(List<Document> d_results, int limit) {
+public double[] calPrecisionRecall(int max_hit) {
 	double tp = 0;// true positive
 	double fn = 0;// false negative
 	double fp = 0;// false positive
-	for (int i = 0; i < limit; i++) {
-		String relevance = d_results.get(i).get("relevance");
+	double[] onePrecisionRecall = new double[2];
+	for (int i = 0; i < max_hit; i++) {
+		String relevance = resultSet.get(i).get("relevance");
 		if (relevance.equals("1"))
 			tp = tp + 1;
 	}
 	fn = relevantDocumentCount - tp;
-	fp = limit - tp;
+	fp = max_hit - tp;
 
 	// calculate precision
 	if ((tp + fp) != 0)
-		this.onePrecisionRecall[0] = tp / (tp + fp);
+		onePrecisionRecall[0] = tp / (tp + fp);
 	// calculate recall
 	if ((tp + fn) != 0)
-		this.onePrecisionRecall[1] = tp / (tp + fn);
-	return this.onePrecisionRecall;
+		onePrecisionRecall[1] = tp / (tp + fn);
+	return onePrecisionRecall;
 }
 /*****************************************************************************
  * calculate 11-point Interpolated Precision Recall Curve
@@ -230,7 +232,7 @@ public void cal11ptPrecisionRecallCurve(List<Document> d_results) {
 	List<double[]> PrecisionRecall = new ArrayList<double []>();
 	double[] desired_recall_levels = {0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
 	for (int i = 1; i < d_results.size(); i++) {
-		PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
+		PrecisionRecall.add(this.calPrecisionRecall(i));
 	}
 	for (double recall_level : desired_recall_levels) {
 		double max_precision = 0.0;
@@ -252,11 +254,11 @@ public void cal11ptPrecisionRecallCurve(List<Document> d_results) {
 /*****************************************************************************
  * calculate all-point Interpolated Precision Recall Curve == NEWLY ADDED
  ****************************************************************************/	
-public void calInterpolatedPrecisionRecallCurve(List<Document> d_results) {
+public void calInterpolatedPrecisionRecallCurve() {
 	// 11-pt recall level
 	List<double[]> PrecisionRecall = new ArrayList<double []>();
-	for (int i = 1; i < d_results.size(); i++) {
-		PrecisionRecall.add(this.calPrecisionRecall(d_results, i));
+	for (int i = 1; i < resultSet.size(); i++) {
+		PrecisionRecall.add(this.calPrecisionRecall(i));
 	}
 	for (int i = 0; i < PrecisionRecall.size(); i++) {
 		double recall_level = PrecisionRecall.get(i)[1];
@@ -293,8 +295,10 @@ public void print_hist(int query){
 	System.out.println("\t\thit counts:  "+query +" : " + this.hits.length);
 
 }//end of printing hits
-public void print_precision_recall(){
-		System.out.println("Pr: " + this.onePrecisionRecall[0] + "\tRec:" + this.onePrecisionRecall[1]);
+public void print_precision_recall(int max_hit){
+	max_hit = max_hit > resultSet.size() ? resultSet.size() : max_hit;
+	double[] onePrecisionRecall = calPrecisionRecall(max_hit);
+	System.out.println("Pr: " + onePrecisionRecall[0] + "\tRec:" + onePrecisionRecall[1]);
 	
 }//end of printing precision and recall. 
 
