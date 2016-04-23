@@ -6,23 +6,31 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.util.CharArraySet;
 
 public class ConfigureAnalyzer {
-	// Either empty Or default
+	/****************************************************************************
+	 * fields - field names indicate purpose. for more information See
+	 * constructor.
+	 ****************************************************************************/
 	private CharArraySet stopSet;
-
 	private int morphologySelector;
 	private boolean stopWordsSelector;
 	private Analyzer analyzer = null;
 
-	// stop = true => use anyalyzer's default stop word set
-	// morpho = 1 => standard analyzer, 2 = English
+	/****************************************************************************
+	 * Constructor Invoked with analyzer selector and stop word removal
+	 * indicator.
+	 ****************************************************************************/
 	ConfigureAnalyzer(int morpho, boolean stop) {
+		// stop = true => use anyalyzer's default stop word set
+		// morpho = 1 => standard analyzer, 2 = English
 		Analyzer tmp = null;
 		this.setMorphologySelector(morpho);
 		this.setStopWordsSelector(stop);
 		this.setAnalyzer(tmp);
 	}
 
-	// Setters and getters
+	/****************************************************************************
+	 * Getters and Setters
+	 ****************************************************************************/
 	public CharArraySet getStopSet() {
 		return stopSet;
 	}
@@ -51,6 +59,10 @@ public class ConfigureAnalyzer {
 		return analyzer;
 	}
 
+	/****************************************************************************
+	 * Selects an analyzer and stop word options. If more analyzers are to be
+	 * added, modify this code.
+	 ****************************************************************************/
 	public void setAnalyzer(Analyzer analyzer) {
 		// Set up StandardAnalyzer
 		if (this.getMorphologySelector() == 0) {
@@ -85,6 +97,11 @@ public class ConfigureAnalyzer {
 		this.analyzer = analyzer;
 	}
 
+	/****************************************************************************
+	 * prints information on the current analyzer. Information = current
+	 * analyzer and its version. Information = whether stop words are removed or
+	 * not.
+	 ****************************************************************************/
 	@Override
 	public String toString() {
 		String retunthis = "\nAnalyzer :\t" + this.getAnalyzer().getClass().getSimpleName() + "  "
@@ -93,6 +110,9 @@ public class ConfigureAnalyzer {
 		return retunthis;
 	}// end of toString
 
+	/****************************************************************************
+	 * Driver program added for Testing purpose
+	 ****************************************************************************/
 	public static void main(String[] args) {
 		int chooseAnalyzer[] = { 0, 1 };
 		boolean stopOrNot[] = { true, false };
