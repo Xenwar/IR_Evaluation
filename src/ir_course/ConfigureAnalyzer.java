@@ -68,12 +68,19 @@ public class ConfigureAnalyzer {
 		if (this.getMorphologySelector() == 0) {
 			// remove stop words
 			if (this.stopWordsSelector) {
+				/*---------------------------------------
+				 *  get the default stop word list, implicitly present
+				 *  but added here for consistency
+				----------------------------------------*/
 				CharArraySet defaultlist = StandardAnalyzer.STOP_WORDS_SET;
 				this.setStopSet(defaultlist);
 				analyzer = new StandardAnalyzer(this.getStopSet());
 			}
 			// do not remove stop words
 			else {
+				/*----------------------------------------------
+				 *  remove default word list with an empty one
+				-----------------------------------------------*/
 				CharArraySet disableRemoval = CharArraySet.EMPTY_SET;
 				this.setStopSet(disableRemoval);
 				analyzer = new StandardAnalyzer(this.getStopSet());
@@ -83,12 +90,19 @@ public class ConfigureAnalyzer {
 		if (this.getMorphologySelector() == 1) {
 			// remove stop words
 			if (this.stopWordsSelector) {
+				/*---------------------------------------
+				 *  get the default stop word list, implicitly present
+				 *  but added here for consistency
+				----------------------------------------*/
 				CharArraySet engDefaultlist = EnglishAnalyzer.getDefaultStopSet();
 				this.setStopSet(engDefaultlist);
 				analyzer = new EnglishAnalyzer(this.getStopSet());
 			}
 			// do not remove stop words
 			else {
+				/*----------------------------------------------
+				 *  remove default word list with an empty one
+				-----------------------------------------------*/
 				CharArraySet disableRemoval = CharArraySet.EMPTY_SET;
 				this.setStopSet(disableRemoval);
 				analyzer = new EnglishAnalyzer(this.getStopSet());
