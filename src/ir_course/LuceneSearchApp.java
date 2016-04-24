@@ -96,13 +96,13 @@ public class LuceneSearchApp {
 	 * Driver program
 	 ****************************************************************************/
 	public static void main(String[] args) throws IOException {
-		if (args.length > -1) {
+		if (args.length > 0) {
 			/*----------------------------------------------------------
 			 * create object app=driver and report for printing purpose.
 			 * create prefix of folder path for saving indexes. 
 			 ------------------------------------------------------------*/
-			LuceneSearchApp app = new LuceneSearchApp("input/corpus_part2.xml");
-			//LuceneSearchApp app = new LuceneSearchApp(args[0]);
+			//LuceneSearchApp app = new LuceneSearchApp("input/corpus_part2.xml");
+			LuceneSearchApp app = new LuceneSearchApp(args[0]);
 			Reporter report = new Reporter();
 			String indexStorageFolderprefix;
 			/*----------------------------------------------------------
